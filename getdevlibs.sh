@@ -17,7 +17,7 @@ pushd "${BIDMAT_ROOT}"  > /dev/null
 BIDMAT_ROOT=`pwd`
 BIDMAT_ROOT="$( echo ${BIDMAT_ROOT} | sed s+/cygdrive/c+c:+ )" 
 
-source ${BIDMAT_ROOT}/getcudaversion.sh
+source ${BIDMAT_ROOT}/buildscripts/getcudaversion.sh
 
 devdir="dev-cuda${CUDA_VERSION}"
 echo "Fetching libs from ${devdir}"
