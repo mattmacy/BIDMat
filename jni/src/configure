@@ -171,8 +171,23 @@ elif [ "$OS" = "linux" ] ; then
 	LIBDIR="${BIDMAT_ROOT}/lib"
 	INSTALL_DIR="${BIDMAT_ROOT}/src/main/resources/lib"
 	CUDA_LIBS="-L${CUDA_HOME}/${CULIB} -L${LIBDIR} -lcudart -lcublas"
-else
-	BLAS_ROOT="/opt/intel/mkl"
+    else
+	if [ "$USE_INTEL_PROPRIETARY" != "" ]; then
+	   BLAS_ROOT="/opt/intel/mkl"
+	   CC="icc"
+	else
+	    if [ "$OPENBLAS_ROOT" != "" ]; then
+		BLAS_INCLUDE="-I$OPENBLAS_ROOT/include"
+		BLAS_LIB="-L$OPENBLAS_ROOT/lib -lopenblas"
+	    else
+		BLAS_INCLUDE="-I/usr/local/include"
+		BLAS_LIB="-L/usr/local/lib -lopenblas"
+	    fi
+	    if [ "$CC" = "" ]; then
+		CC="gcc-4.9"
+	    fi
+	fi
+
 	GCC_VERSION="4.8"  # needed for include path to bits/c++config.h on ubuntu
 	RANDSRC="VSL"
 	if [ "$JAVA_HOME" = "" ]; then
@@ -186,8 +201,9 @@ else
 	else
             CULIB="lib64"
 	fi
-	CC="icc"
-	GCC="g++"
+	if [ "$GCC" = "" ]; then
+	    GCC="g++"
+	fi
 	NVCC="nvcc" 
 	NVCCFLAGS="-c -use_fast_math -I$BIDMAT_ROOT/jni/include \
           -gencode arch=compute_20,code=sm_20 \
@@ -195,15 +211,24 @@ else
           -gencode arch=compute_35,code=sm_35 \
           -gencode arch=compute_50,code=sm_50 \
           -gencode arch=compute_52,code=sm_52 \
-          --machine ${MBITS}  -Xcompiler \"-fPIC -c -O2 -g -DNDEBUG\""
+          --machine ${MBITS} -D_FORCE_INLINES -Xcompiler \"-fPIC -c -O2 -g -DNDEBUG\""
 	OBJ="o"
 	OUTFLG="-o "
 	CPPFLAGS="-fPIC -c -O2 -DNDEBUG -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -I$BIDMAT_ROOT/jni/include -I$CUDA_HOME/include -I/usr/include/x86_64-linux-gnu/c++/$GCC_VERSION"
-	CFLAGS="-openmp -fPIC -c -O2 -DNDEBUG -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -I$BIDMAT_ROOT/jni/include -I$BLAS_ROOT/include -I$BLAS_ROOT/include/${ARCHD}${SUBDIR}"
+
+	if [ "$USE_INTEL_PROPRIETARY" != "" ]; then
+	    CFLAGS="-openmp -fPIC -c -O2 -DNDEBUG -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -I$BIDMAT_ROOT/jni/include -I$BLAS_ROOT/include -I$BLAS_ROOT/include/${ARCHD}${SUBDIR}"
+	else
+	    CFLAGS="-fopenmp -fPIC -c -O2 -DNDEBUG -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -I$BIDMAT_ROOT/jni/include -I$BLAS_ROOT/include -I$BLAS_ROOT/include/${ARCHD}${SUBDIR}"
+	fi
 	LB="ar rc"    
 	GLD="nvcc -shared"
 	GLD="g++ -shared"
-	LD="icc -shared -static-intel -z noexecstack"
+	if [ "$CC" = "icc" ]; then
+	    LD="icc -shared -static-intel -z noexecstack"
+	else
+	    LD="gcc -shared -z noexecstack"
+	fi
 	LDFLAGS="$LDFLAGS"
 	LIBPREPEND="lib"
 	LIBAPPEND="-${OS}-${ARCH}.so"
@@ -213,16 +238,20 @@ else
 	FFLAGS="$CFLAGS"
 	LAPACK_INCLUDES=""
 	FORTRAN_LIBS="-lgfortran"
-	if [ "$PARLIB" = "sequential" ] ; then
-	    CPU_LIBS="-L$JAVA_HOME/lib -L${BIDMAT_ROOT}/lib \
-            -Wl,--start-group  $BLAS_ROOT/lib/${ARCHD}/libmkl_intel${PTYPE}.a \
-            $BLAS_ROOT/lib/${ARCHD}/libmkl_core.a $BLAS_ROOT/lib/${ARCHD}/libmkl_sequential.a \
-            -Wl,--end-group -lpthread -lm"
-	else 
-	    CPU_LIBS="-L$JAVA_HOME/lib -L${BIDMAT_ROOT}/lib \
-            -Wl,--start-group  $BLAS_ROOT/lib/${ARCHD}/libmkl_intel${PTYPE}.a \
-            $BLAS_ROOT/lib/${ARCHD}/libmkl_core.a $BLAS_ROOT/lib/${ARCHD}/libmkl_intel_thread.a \
-            -Wl,--end-group -liomp5 -ldl -lpthread -lm"
+	if [ "$USE_INTEL_PROPRIETARY" != "" ]; then
+	    if [ "$PARLIB" = "sequential" ] ; then
+		CPU_LIBS="-L$JAVA_HOME/lib -L${BIDMAT_ROOT}/lib \
+                -Wl,--start-group  $BLAS_ROOT/lib/${ARCHD}/libmkl_intel${PTYPE}.a \
+                $BLAS_ROOT/lib/${ARCHD}/libmkl_core.a $BLAS_ROOT/lib/${ARCHD}/libmkl_sequential.a \
+                 -Wl,--end-group -lpthread -lm"
+	    else
+		CPU_LIBS="-L$JAVA_HOME/lib -L${BIDMAT_ROOT}/lib \
+                -Wl,--start-group  $BLAS_ROOT/lib/${ARCHD}/libmkl_intel${PTYPE}.a \
+                $BLAS_ROOT/lib/${ARCHD}/libmkl_core.a $BLAS_ROOT/lib/${ARCHD}/libmkl_intel_thread.a \
+               -Wl,--end-group -liomp5 -ldl -lpthread -lm"
+	    fi
+	else
+	    CPU_LIBS="-L$JAVA_HOME/lib -L${BIDMAT_ROOT}/lib ${BLAS_LIB} -ldl -lpthread -lm -lstdc++ -lgomp"
 	fi
 	LIBDIR="${BIDMAT_ROOT}/lib"
 	INSTALL_DIR="${BIDMAT_ROOT}/src/main/resources/lib"
