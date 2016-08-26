@@ -1,5 +1,7 @@
 
+#ifdef USE_INTEL_PROPRIETARY
 #include "mkl_vsl.h"
+
 
 #include <jni.h>
 
@@ -467,3 +469,4 @@ JNIEXPORT jint JNICALL Java_edu_berkeley_bid_VSL_vsRngBeta
     return retval;
 }
 
+#endif

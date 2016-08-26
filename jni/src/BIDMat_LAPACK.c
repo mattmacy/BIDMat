@@ -1,12 +1,12 @@
 
 #include <jni.h>
-#ifndef __arm__          // Need a working Lapack first
-#ifdef __arm__
-#include <lapacke.h>
-#else
+#ifndef __arm__
+#ifdef USE_INTEL_PROPRIETARY
 #include <mkl.h>
 #include <mkl_lapacke.h>
 #include <mkl_lapack.h>
+#else
+#include <lapacke.h>
 #endif
 
 JNIEXPORT jint JNICALL Java_edu_berkeley_bid_LAPACK_dgetrf
