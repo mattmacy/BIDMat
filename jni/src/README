@@ -1,0 +1,15 @@
+some pointers on building:
+openjdk8 and gcc 4.8 or gcc 4.9 need to be installed
+
+either Intel's MKL or openblas need to be installed
+if MKL is installed it is assumed that icc is too
+
+
+
+on Ubuntu 16
+install liblapacke-dev openblas openjdk8 and gcc-4.9
+
+and set
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export GCC=g++-4.9
+export CC=gcc-4.9
