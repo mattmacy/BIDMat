@@ -57,7 +57,7 @@ cygwinpath() {
   fi
 }
 
-. "$(dirname "$(realpath "$0")")/sbt-launch-lib.bash"
+. "$(dirname "$(realpath "$0")")/buildscripts/sbt-launch-lib.bash"
 
 
 declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory=project/.boot -Dsbt.ivy.home=project/.ivy"
